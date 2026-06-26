@@ -1,21 +1,28 @@
+import logging
 from pathlib import Path
 from uuid import uuid4
 
+import anyio
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.exceptions import AppException
+from app.models.document import DocumentStatus, MedicalDocument
 from app.models.user import User
 from app.repositories.document_repository import DocumentRepository
+from app.services.documents.text_extractor import TextExtractor
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentService:
     allowed_extensions = {".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"}
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, text_extractor: TextExtractor | None = None) -> None:
         self.document_repository = DocumentRepository(session)
         self.upload_dir = Path(settings.UPLOAD_DIR)
+        self.text_extractor = text_extractor or TextExtractor()
 
     async def upload_document(self, current_user: User, file: UploadFile):
         original_filename = Path(file.filename or "").name
@@ -47,7 +54,7 @@ class DocumentService:
         storage_path = user_upload_dir / stored_filename
         storage_path.write_bytes(content)
 
-        return await self.document_repository.create(
+        document = await self.document_repository.create(
             user_id=current_user.id,
             original_filename=original_filename,
             stored_filename=stored_filename,
@@ -56,6 +63,39 @@ class DocumentService:
             file_extension=extension,
             size_bytes=size_bytes,
         )
+
+        return await self._process_document(document)
+
+    async def _process_document(self, document: MedicalDocument) -> MedicalDocument:
+        """Extract text from a stored document and record the outcome.
+
+        Extraction is CPU-bound (parsing/OCR), so it runs in a worker thread to
+        keep the event loop responsive. A failure marks the document as failed
+        with a short error message instead of breaking the upload request.
+        """
+        try:
+            extracted_text = await anyio.to_thread.run_sync(
+                self.text_extractor.extract,
+                Path(document.storage_path),
+                document.file_extension,
+            )
+        except Exception as exc:  # noqa: BLE001 - any parser/OCR error marks the doc failed
+            logger.exception("Document processing failed for document %s", document.id)
+            updated = await self.document_repository.set_processing_result(
+                document.id,
+                document.user_id,
+                status=DocumentStatus.FAILED.value,
+                error=str(exc)[:500],
+            )
+            return updated or document
+
+        updated = await self.document_repository.set_processing_result(
+            document.id,
+            document.user_id,
+            status=DocumentStatus.PROCESSED.value,
+            extracted_text=extracted_text or None,
+        )
+        return updated or document
 
     async def list_documents(self, current_user: User):
         return await self.document_repository.list_for_user(current_user.id)

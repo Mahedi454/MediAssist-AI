@@ -23,6 +23,7 @@ This project is being built step by step.
 - Step 5: Medical document upload API
 - Step 6: Ollama-powered chat (LangChain + Gemma 3)
 - Step 7: Medical chat with emergency safety notices
+- Step 8: Document text extraction and OCR (PDF, DOCX, TXT, images)
 
 ## Backend Quick Start
 
@@ -36,3 +37,16 @@ Then open:
 
 - `http://localhost:8000/docs`
 - `http://localhost:8000/api/v1/health`
+
+### Optional: OCR for scanned documents and images
+
+Text PDFs, DOCX, and TXT files work out of the box. To extract text from
+scanned PDFs and images (PNG/JPG), install Tesseract OCR and point the backend
+at it:
+
+1. Install Tesseract (Windows: <https://github.com/UB-Mannheim/tesseract/wiki>).
+2. Set `TESSERACT_CMD` in `.env` to the binary path, for example
+   `TESSERACT_CMD=C:\Program Files\Tesseract-OCR\tesseract.exe`.
+
+Without Tesseract, uploads of scanned files are still accepted but marked with a
+`failed` processing status.

@@ -12,8 +12,13 @@ class DocumentRead(BaseModel):
     file_extension: str
     size_bytes: int
     status: str
+    error: str | None = None
     created_at: datetime
     updated_at: datetime
+
+
+class DocumentDetail(DocumentRead):
+    extracted_text: str | None = None
 
 
 class DeleteDocumentResponse(BaseModel):

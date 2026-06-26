@@ -33,6 +33,25 @@ class DocumentRepository:
         await self.session.refresh(document)
         return document
 
+    async def set_processing_result(
+        self,
+        document_id: int,
+        user_id: int,
+        *,
+        status: str,
+        extracted_text: str | None = None,
+        error: str | None = None,
+    ) -> MedicalDocument | None:
+        document = await self.get_by_id(document_id, user_id)
+        if document is None:
+            return None
+        document.status = status
+        document.extracted_text = extracted_text
+        document.error = error
+        await self.session.commit()
+        await self.session.refresh(document)
+        return document
+
     async def get_by_id(self, document_id: int, user_id: int) -> MedicalDocument | None:
         result = await self.session.execute(
             select(MedicalDocument).where(MedicalDocument.id == document_id, MedicalDocument.user_id == user_id)

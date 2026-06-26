@@ -1,6 +1,6 @@
 from enum import StrEnum
 
-from sqlalchemy import BigInteger, ForeignKey, String
+from sqlalchemy import BigInteger, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin
@@ -25,4 +25,6 @@ class MedicalDocument(TimestampMixin, Base):
     file_extension: Mapped[str] = mapped_column(String(20), nullable=False)
     size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
     status: Mapped[str] = mapped_column(String(50), default=DocumentStatus.UPLOADED.value, nullable=False)
+    extracted_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
