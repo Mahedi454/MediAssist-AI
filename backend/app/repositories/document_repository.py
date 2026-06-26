@@ -54,6 +54,15 @@ class DocumentRepository:
         await self.session.refresh(document)
         return document
 
+    async def set_analysis(self, document_id: int, user_id: int, analysis: str) -> MedicalDocument | None:
+        document = await self.get_by_id(document_id, user_id)
+        if document is None:
+            return None
+        document.analysis = analysis
+        await self.session.commit()
+        await self.session.refresh(document)
+        return document
+
     async def get_by_id(self, document_id: int, user_id: int) -> MedicalDocument | None:
         result = await self.session.execute(
             select(MedicalDocument).where(MedicalDocument.id == document_id, MedicalDocument.user_id == user_id)

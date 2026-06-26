@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 150
     RAG_TOP_K: int = 4
+    REPORT_ANALYSIS_MAX_CHARS: int = 12000
 
     CHROMA_PERSIST_DIR: str = "./storage/chroma"
     UPLOAD_DIR: str = "./storage/uploads"

@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 import anyio
 
-from app.core.constants import MEDICAL_DISCLAIMER
+from app.core.constants import append_disclaimer
 from app.services.ai import OllamaService, get_ai_service
 from app.services.rag.vector_store import RetrievedChunk, VectorStoreService, get_vector_store
 
@@ -68,11 +68,11 @@ class RagService:
         )
 
         if not chunks:
-            return RagAnswer(answer=self._with_disclaimer(NO_CONTEXT_MESSAGE), sources=[])
+            return RagAnswer(answer=append_disclaimer(NO_CONTEXT_MESSAGE), sources=[])
 
         context = self._build_context(chunks)
         answer = await self._get_ai_service().answer_with_context(question, context)
-        return RagAnswer(answer=self._with_disclaimer(answer), sources=chunks)
+        return RagAnswer(answer=append_disclaimer(answer), sources=chunks)
 
     @staticmethod
     def _build_context(chunks: list[RetrievedChunk]) -> str:
@@ -87,9 +87,3 @@ class RagService:
         if len(text) <= _SNIPPET_LENGTH:
             return text
         return f"{text[:_SNIPPET_LENGTH].rstrip()}..."
-
-    @staticmethod
-    def _with_disclaimer(answer: str) -> str:
-        if MEDICAL_DISCLAIMER.lower() in answer.lower():
-            return answer
-        return f"{answer}\n\n_Disclaimer: {MEDICAL_DISCLAIMER}_"

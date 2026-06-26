@@ -12,7 +12,13 @@ from langchain_ollama import ChatOllama
 
 from app.core.config import settings
 from app.core.exceptions import AppException
-from app.services.ai.prompts import RAG_SYSTEM_PROMPT, RAG_USER_TEMPLATE, SYSTEM_PROMPT
+from app.services.ai.prompts import (
+    RAG_SYSTEM_PROMPT,
+    RAG_USER_TEMPLATE,
+    REPORT_ANALYSIS_SYSTEM_PROMPT,
+    REPORT_ANALYSIS_TEMPLATE,
+    SYSTEM_PROMPT,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +51,14 @@ class OllamaService:
         messages: list[BaseMessage] = [
             SystemMessage(content=RAG_SYSTEM_PROMPT),
             HumanMessage(content=RAG_USER_TEMPLATE.format(context=context, question=question)),
+        ]
+        return await self._invoke(messages)
+
+    async def analyze_report(self, report_text: str) -> str:
+        """Produce a structured, patient-friendly analysis of a medical report."""
+        messages: list[BaseMessage] = [
+            SystemMessage(content=REPORT_ANALYSIS_SYSTEM_PROMPT),
+            HumanMessage(content=REPORT_ANALYSIS_TEMPLATE.format(text=report_text)),
         ]
         return await self._invoke(messages)
 

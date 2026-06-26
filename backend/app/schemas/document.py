@@ -20,6 +20,7 @@ class DocumentRead(BaseModel):
 
 class DocumentDetail(DocumentRead):
     extracted_text: str | None = None
+    analysis: str | None = None
 
 
 class DeleteDocumentResponse(BaseModel):

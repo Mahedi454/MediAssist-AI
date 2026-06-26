@@ -26,6 +26,7 @@ This project is being built step by step.
 - Step 8: Document text extraction and OCR (PDF, DOCX, TXT, images)
 - Step 9-10: Chunking, embeddings (Sentence Transformers), and ChromaDB storage
 - Step 11-13: RAG question answering over uploaded documents with citations
+- Step 14: Patient-friendly medical report analysis
 
 ## Backend Quick Start
 

@@ -10,3 +10,10 @@ EMERGENCY_NOTICE = (
     "nearest emergency department now. Do not wait for an online response."
 )
 
+
+def append_disclaimer(text: str) -> str:
+    """Append the standard medical disclaimer unless the text already contains it."""
+    if MEDICAL_DISCLAIMER.lower() in text.lower():
+        return text
+    return f"{text}\n\n_Disclaimer: {MEDICAL_DISCLAIMER}_"
+

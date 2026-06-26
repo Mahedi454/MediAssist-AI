@@ -27,5 +27,6 @@ class MedicalDocument(TimestampMixin, Base):
     status: Mapped[str] = mapped_column(String(50), default=DocumentStatus.UPLOADED.value, nullable=False)
     extracted_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     chunk_count: Mapped[int] = mapped_column(default=0, nullable=False)
+    analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
     error: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
