@@ -19,6 +19,7 @@ This project is being built step by step.
 - Step 1: Project folder structure
 - Step 2: FastAPI backend foundation
 - Step 3: Authentication API
+- Step 4: Chat API
 
 ## Backend Quick Start
 
