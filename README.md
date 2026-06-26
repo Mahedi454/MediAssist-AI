@@ -28,6 +28,7 @@ This project is being built step by step.
 - Step 11-13: RAG question answering over uploaded documents with citations
 - Step 14: Patient-friendly medical report analysis
 - Step 15: Dashboard overview (statistics, recent uploads and chats)
+- Step 17: Automated tests for chat, RAG, safety, and document services
 - Step 18: Docker Compose stack (backend, PostgreSQL, Ollama)
 
 ## Run With Docker (recommended)
