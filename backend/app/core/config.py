@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     AI_PROVIDER: Literal["ollama"] = "ollama"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "gemma3"
+    OLLAMA_TEMPERATURE: float = 0.3
 
     MAX_UPLOAD_SIZE_MB: int = 20
 

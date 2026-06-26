@@ -6,11 +6,13 @@ from app.models.chat import MessageRole
 from app.models.user import User
 from app.repositories.chat_repository import ChatRepository
 from app.schemas.chat import ChatRequest, ConversationCreate
+from app.services.ai import OllamaService, get_ai_service
 
 
 class ChatService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, ai_service: OllamaService | None = None) -> None:
         self.chat_repository = ChatRepository(session)
+        self.ai_service = ai_service or get_ai_service()
 
     async def create_conversation(self, current_user: User, payload: ConversationCreate):
         title = payload.title or "New healthcare conversation"
@@ -31,11 +33,22 @@ class ChatService:
             raise AppException("Conversation not found.", status_code=404, error_code="conversation_not_found")
 
     async def send_message(self, current_user: User, payload: ChatRequest):
+        # Load prior turns first so the model has conversation context. The reply
+        # is generated before anything is persisted, so a failed model call leaves
+        # no orphan conversation or dangling user message behind.
         if payload.conversation_id is None:
-            title = self._make_title(payload.message)
-            conversation = await self.chat_repository.create_conversation(current_user.id, title)
+            conversation = None
+            history: list[tuple[str, str]] = []
         else:
             conversation = await self.get_conversation(current_user, payload.conversation_id)
+            history = [(message.role, message.content) for message in conversation.messages]
+
+        reply = await self.ai_service.generate_reply(payload.message, history)
+        assistant_content = self._with_disclaimer(reply)
+
+        if conversation is None:
+            title = self._make_title(payload.message)
+            conversation = await self.chat_repository.create_conversation(current_user.id, title)
 
         user_message = await self.chat_repository.add_message(
             conversation_id=conversation.id,
@@ -45,18 +58,16 @@ class ChatService:
         assistant_message = await self.chat_repository.add_message(
             conversation_id=conversation.id,
             role=MessageRole.ASSISTANT.value,
-            content=self._build_placeholder_response(payload.message),
+            content=assistant_content,
         )
         refreshed_conversation = await self.get_conversation(current_user, conversation.id)
         return refreshed_conversation, user_message, assistant_message
 
-    def _build_placeholder_response(self, message: str) -> str:
-        return (
-            "I can help with general healthcare education. The AI model will be connected in a later step, "
-            "so this temporary response has not interpreted your question clinically. "
-            f"You asked: {message}\n\n"
-            f"Disclaimer: {MEDICAL_DISCLAIMER}"
-        )
+    @staticmethod
+    def _with_disclaimer(reply: str) -> str:
+        if MEDICAL_DISCLAIMER.lower() in reply.lower():
+            return reply
+        return f"{reply}\n\n_Disclaimer: {MEDICAL_DISCLAIMER}_"
 
     def _make_title(self, message: str) -> str:
         clean_message = " ".join(message.split())
