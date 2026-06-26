@@ -22,6 +22,7 @@ This project is being built step by step.
 - Step 4: Chat API
 - Step 5: Medical document upload API
 - Step 6: Ollama-powered chat (LangChain + Gemma 3)
+- Step 7: Medical chat with emergency safety notices
 
 ## Backend Quick Start
 

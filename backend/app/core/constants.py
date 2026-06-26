@@ -4,3 +4,9 @@ MEDICAL_DISCLAIMER = (
     "a qualified healthcare professional for personal medical concerns."
 )
 
+EMERGENCY_NOTICE = (
+    "**Important:** Your message mentions symptoms that can signal a medical "
+    "emergency. If this is urgent, call your local emergency number or go to the "
+    "nearest emergency department now. Do not wait for an online response."
+)
+

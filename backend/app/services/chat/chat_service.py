@@ -1,12 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.constants import MEDICAL_DISCLAIMER
+from app.core.constants import EMERGENCY_NOTICE, MEDICAL_DISCLAIMER
 from app.core.exceptions import AppException
 from app.models.chat import MessageRole
 from app.models.user import User
 from app.repositories.chat_repository import ChatRepository
 from app.schemas.chat import ChatRequest, ConversationCreate
 from app.services.ai import OllamaService, get_ai_service
+from app.services.ai.safety import is_potential_emergency
 
 
 class ChatService:
@@ -44,7 +45,7 @@ class ChatService:
             history = [(message.role, message.content) for message in conversation.messages]
 
         reply = await self.ai_service.generate_reply(payload.message, history)
-        assistant_content = self._with_disclaimer(reply)
+        assistant_content = self._compose_reply(payload.message, reply)
 
         if conversation is None:
             title = self._make_title(payload.message)
@@ -62,6 +63,16 @@ class ChatService:
         )
         refreshed_conversation = await self.get_conversation(current_user, conversation.id)
         return refreshed_conversation, user_message, assistant_message
+
+    @classmethod
+    def _compose_reply(cls, user_message: str, reply: str) -> str:
+        # An emergency notice (if warranted) goes first so it is impossible to miss,
+        # then the model's answer, then the standard educational disclaimer.
+        sections: list[str] = []
+        if is_potential_emergency(user_message):
+            sections.append(EMERGENCY_NOTICE)
+        sections.append(reply)
+        return cls._with_disclaimer("\n\n".join(sections))
 
     @staticmethod
     def _with_disclaimer(reply: str) -> str:
