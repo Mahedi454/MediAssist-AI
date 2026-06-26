@@ -1,0 +1,57 @@
+# MediAssist AI full stack: FastAPI backend + PostgreSQL + Ollama.
+#
+# Quick start:
+#   docker compose up -d --build
+#   docker compose exec ollama ollama pull gemma3   # one-time model download
+# Then open http://localhost:8000/docs
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-healthcare_chatbot}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-healthcare_chatbot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "11434:11434"
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-healthcare_chatbot}
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me}
+      CHROMA_PERSIST_DIR: /app/storage/chroma
+      UPLOAD_DIR: /app/storage/uploads
+      PROCESSED_DIR: /app/storage/processed
+      LOG_DIR: /app/storage/logs
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_storage:/app/storage
+      # Persist the downloaded embedding model so it is fetched only once.
+      - hf_cache:/root/.cache
+
+volumes:
+  pgdata:
+  ollama:
+  backend_storage:
+  hf_cache:

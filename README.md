@@ -28,14 +28,30 @@ This project is being built step by step.
 - Step 11-13: RAG question answering over uploaded documents with citations
 - Step 14: Patient-friendly medical report analysis
 - Step 15: Dashboard overview (statistics, recent uploads and chats)
+- Step 18: Docker Compose stack (backend, PostgreSQL, Ollama)
 
-## Backend Quick Start
+## Run With Docker (recommended)
+
+Runs the whole stack — FastAPI backend, PostgreSQL, and Ollama — with one command.
+
+```bash
+docker compose up -d --build
+docker compose exec ollama ollama pull gemma3   # one-time model download
+```
+
+Then open `http://localhost:8000/docs`. Database tables are created automatically
+on startup, and uploads, the vector store, and the embedding model are persisted
+in Docker volumes.
+
+## Backend Quick Start (local)
 
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
+
+This requires a local PostgreSQL and a running Ollama (`ollama pull gemma3`).
 
 Then open:
 
