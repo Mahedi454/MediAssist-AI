@@ -12,6 +12,8 @@ from app.models.document import DocumentStatus, MedicalDocument
 from app.models.user import User
 from app.repositories.document_repository import DocumentRepository
 from app.services.documents.text_extractor import TextExtractor
+from app.services.rag import chunk_text
+from app.services.rag.vector_store import VectorStoreService, get_vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +21,23 @@ logger = logging.getLogger(__name__)
 class DocumentService:
     allowed_extensions = {".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"}
 
-    def __init__(self, session: AsyncSession, text_extractor: TextExtractor | None = None) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        text_extractor: TextExtractor | None = None,
+        vector_store: VectorStoreService | None = None,
+    ) -> None:
         self.document_repository = DocumentRepository(session)
         self.upload_dir = Path(settings.UPLOAD_DIR)
         self.text_extractor = text_extractor or TextExtractor()
+        # Loading the embedding model is expensive, so the vector store is
+        # resolved lazily (only when a document is ingested or deleted).
+        self._vector_store = vector_store
+
+    def _get_vector_store(self) -> VectorStoreService:
+        if self._vector_store is None:
+            self._vector_store = get_vector_store()
+        return self._vector_store
 
     async def upload_document(self, current_user: User, file: UploadFile):
         original_filename = Path(file.filename or "").name
@@ -79,7 +94,16 @@ class DocumentService:
                 Path(document.storage_path),
                 document.file_extension,
             )
-        except Exception as exc:  # noqa: BLE001 - any parser/OCR error marks the doc failed
+            chunks = chunk_text(extracted_text)
+            chunk_count = 0
+            if chunks:
+                chunk_count = await anyio.to_thread.run_sync(
+                    self._get_vector_store().add_document,
+                    document.user_id,
+                    document.id,
+                    chunks,
+                )
+        except Exception as exc:  # noqa: BLE001 - any parse/OCR/embedding error marks the doc failed
             logger.exception("Document processing failed for document %s", document.id)
             updated = await self.document_repository.set_processing_result(
                 document.id,
@@ -94,6 +118,7 @@ class DocumentService:
             document.user_id,
             status=DocumentStatus.PROCESSED.value,
             extracted_text=extracted_text or None,
+            chunk_count=chunk_count,
         )
         return updated or document
 
@@ -115,4 +140,12 @@ class DocumentService:
         storage_path = Path(document.storage_path)
         if storage_path.exists() and storage_path.is_file():
             storage_path.unlink()
+
+        # Remove the document's chunks from the vector store so deleted documents
+        # can never surface in future retrieval results.
+        await anyio.to_thread.run_sync(
+            self._get_vector_store().delete_document,
+            current_user.id,
+            document_id,
+        )
 

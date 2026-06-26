@@ -12,6 +12,7 @@ class DocumentRead(BaseModel):
     file_extension: str
     size_bytes: int
     status: str
+    chunk_count: int = 0
     error: str | None = None
     created_at: datetime
     updated_at: datetime

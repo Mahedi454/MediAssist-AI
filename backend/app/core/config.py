@@ -42,6 +42,12 @@ class Settings(BaseSettings):
 
     MAX_UPLOAD_SIZE_MB: int = 20
 
+    EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+    CHROMA_COLLECTION: str = "medical_documents"
+    CHUNK_SIZE: int = 1000
+    CHUNK_OVERLAP: int = 150
+    RAG_TOP_K: int = 4
+
     CHROMA_PERSIST_DIR: str = "./storage/chroma"
     UPLOAD_DIR: str = "./storage/uploads"
     PROCESSED_DIR: str = "./storage/processed"

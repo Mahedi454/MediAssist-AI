@@ -40,6 +40,7 @@ class DocumentRepository:
         *,
         status: str,
         extracted_text: str | None = None,
+        chunk_count: int = 0,
         error: str | None = None,
     ) -> MedicalDocument | None:
         document = await self.get_by_id(document_id, user_id)
@@ -47,6 +48,7 @@ class DocumentRepository:
             return None
         document.status = status
         document.extracted_text = extracted_text
+        document.chunk_count = chunk_count
         document.error = error
         await self.session.commit()
         await self.session.refresh(document)

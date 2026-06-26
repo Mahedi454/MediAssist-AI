@@ -24,6 +24,7 @@ This project is being built step by step.
 - Step 6: Ollama-powered chat (LangChain + Gemma 3)
 - Step 7: Medical chat with emergency safety notices
 - Step 8: Document text extraction and OCR (PDF, DOCX, TXT, images)
+- Step 9-10: Chunking, embeddings (Sentence Transformers), and ChromaDB storage
 
 ## Backend Quick Start
 
