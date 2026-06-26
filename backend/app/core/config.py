@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "gemma3"
 
+    MAX_UPLOAD_SIZE_MB: int = 20
+
     CHROMA_PERSIST_DIR: str = "./storage/chroma"
     UPLOAD_DIR: str = "./storage/uploads"
     PROCESSED_DIR: str = "./storage/processed"

@@ -2,6 +2,7 @@
 
 from app.models.base import Base
 from app.models.chat import ChatMessage, Conversation
+from app.models.document import MedicalDocument
 from app.models.user import User
 
-__all__ = ["Base", "ChatMessage", "Conversation", "User"]
+__all__ = ["Base", "ChatMessage", "Conversation", "MedicalDocument", "User"]
