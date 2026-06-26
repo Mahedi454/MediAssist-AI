@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -60,3 +60,27 @@ class ChatRepository:
         )
         await self.session.commit()
         return bool(result.rowcount)
+
+    async def count_conversations(self, user_id: int) -> int:
+        result = await self.session.execute(
+            select(func.count()).select_from(Conversation).where(Conversation.user_id == user_id)
+        )
+        return int(result.scalar_one())
+
+    async def count_messages(self, user_id: int) -> int:
+        result = await self.session.execute(
+            select(func.count())
+            .select_from(ChatMessage)
+            .join(Conversation, ChatMessage.conversation_id == Conversation.id)
+            .where(Conversation.user_id == user_id)
+        )
+        return int(result.scalar_one())
+
+    async def list_recent_conversations(self, user_id: int, limit: int) -> list[Conversation]:
+        result = await self.session.execute(
+            select(Conversation)
+            .where(Conversation.user_id == user_id)
+            .order_by(Conversation.updated_at.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())

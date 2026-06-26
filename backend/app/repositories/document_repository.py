@@ -1,4 +1,4 @@
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.document import MedicalDocument
@@ -83,4 +83,35 @@ class DocumentRepository:
         )
         await self.session.commit()
         return bool(result.rowcount)
+
+    async def count_for_user(self, user_id: int) -> int:
+        result = await self.session.execute(
+            select(func.count()).select_from(MedicalDocument).where(MedicalDocument.user_id == user_id)
+        )
+        return int(result.scalar_one())
+
+    async def count_by_status(self, user_id: int, status: str) -> int:
+        result = await self.session.execute(
+            select(func.count())
+            .select_from(MedicalDocument)
+            .where(MedicalDocument.user_id == user_id, MedicalDocument.status == status)
+        )
+        return int(result.scalar_one())
+
+    async def sum_chunks(self, user_id: int) -> int:
+        result = await self.session.execute(
+            select(func.coalesce(func.sum(MedicalDocument.chunk_count), 0)).where(
+                MedicalDocument.user_id == user_id
+            )
+        )
+        return int(result.scalar_one())
+
+    async def list_recent(self, user_id: int, limit: int) -> list[MedicalDocument]:
+        result = await self.session.execute(
+            select(MedicalDocument)
+            .where(MedicalDocument.user_id == user_id)
+            .order_by(MedicalDocument.created_at.desc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
 
