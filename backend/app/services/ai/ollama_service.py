@@ -12,7 +12,7 @@ from langchain_ollama import ChatOllama
 
 from app.core.config import settings
 from app.core.exceptions import AppException
-from app.services.ai.prompts import SYSTEM_PROMPT
+from app.services.ai.prompts import RAG_SYSTEM_PROMPT, RAG_USER_TEMPLATE, SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,21 @@ class OllamaService:
         the conversation; only user and assistant turns are forwarded to the model.
         """
         messages = self._build_messages(message, history or [])
+        return await self._invoke(messages)
+
+    async def answer_with_context(self, question: str, context: str) -> str:
+        """Answer ``question`` grounded strictly in the supplied document ``context``.
+
+        Uses a retrieval-augmented system prompt that forbids using outside
+        knowledge, so the model stays within the user's own documents.
+        """
+        messages: list[BaseMessage] = [
+            SystemMessage(content=RAG_SYSTEM_PROMPT),
+            HumanMessage(content=RAG_USER_TEMPLATE.format(context=context, question=question)),
+        ]
+        return await self._invoke(messages)
+
+    async def _invoke(self, messages: list[BaseMessage]) -> str:
         try:
             response = await self._client.ainvoke(messages)
         except Exception as exc:  # noqa: BLE001 - surface any transport/runtime error uniformly
