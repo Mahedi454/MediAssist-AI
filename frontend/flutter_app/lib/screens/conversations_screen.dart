@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../state/auth_provider.dart';
 import '../state/chat_provider.dart';
+import '../widgets/logout_button.dart';
 import 'chat_screen.dart';
 
 class ConversationsScreen extends StatefulWidget {
@@ -36,26 +36,12 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
     final convos = context.watch<ConversationsProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('MediAssist AI'),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (v) {
-              if (v == 'logout') auth.logout();
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Text(auth.user?.email ?? ''),
-              ),
-              const PopupMenuItem(value: 'logout', child: Text('Log out')),
-            ],
-          ),
-        ],
+        title: const Text('Chats'),
+        actions: const [LogoutButton()],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openChat(),

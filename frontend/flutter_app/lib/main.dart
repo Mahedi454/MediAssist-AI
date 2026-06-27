@@ -4,10 +4,14 @@ import 'package:provider/provider.dart';
 import 'services/api_client.dart';
 import 'services/auth_service.dart';
 import 'services/chat_service.dart';
+import 'services/dashboard_service.dart';
+import 'services/document_service.dart';
+import 'services/rag_service.dart';
 import 'state/auth_provider.dart';
 import 'state/chat_provider.dart';
+import 'state/documents_provider.dart';
 import 'screens/login_screen.dart';
-import 'screens/conversations_screen.dart';
+import 'screens/home_shell.dart';
 
 void main() {
   final apiClient = ApiClient();
@@ -22,8 +26,13 @@ class MediAssistApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chatService = ChatService(apiClient);
+    final documentService = DocumentService(apiClient);
     return MultiProvider(
       providers: [
+        // Stateless services exposed for screens that take them directly.
+        Provider<DashboardService>.value(value: DashboardService(apiClient)),
+        Provider<DocumentService>.value(value: documentService),
+        Provider<RagService>.value(value: RagService(apiClient)),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(
             apiClient: apiClient,
@@ -32,6 +41,7 @@ class MediAssistApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => ChatProvider(chatService)),
         ChangeNotifierProvider(create: (_) => ConversationsProvider(chatService)),
+        ChangeNotifierProvider(create: (_) => DocumentsProvider(documentService)),
       ],
       child: MaterialApp(
         title: 'MediAssist AI',
@@ -46,7 +56,7 @@ class MediAssistApp extends StatelessWidget {
   }
 }
 
-/// Routes between login and the home screen based on auth status.
+/// Routes between login and the home shell based on auth status.
 class _RootGate extends StatelessWidget {
   const _RootGate();
 
@@ -59,7 +69,7 @@ class _RootGate extends StatelessWidget {
           body: Center(child: CircularProgressIndicator()),
         );
       case AuthStatus.authenticated:
-        return const ConversationsScreen();
+        return const HomeShell();
       case AuthStatus.unauthenticated:
         return const LoginScreen();
     }

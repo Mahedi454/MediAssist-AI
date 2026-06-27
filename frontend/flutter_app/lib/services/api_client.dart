@@ -59,6 +59,25 @@ class ApiClient {
     _decode(res);
   }
 
+  /// Uploads a single file as multipart/form-data under [fieldName].
+  Future<dynamic> postMultipartFile(
+    String url, {
+    required String fieldName,
+    required String filename,
+    required List<int> bytes,
+  }) async {
+    final request = http.MultipartRequest('POST', Uri.parse(url));
+    if (_token != null) {
+      request.headers['Authorization'] = 'Bearer $_token';
+    }
+    request.files.add(
+      http.MultipartFile.fromBytes(fieldName, bytes, filename: filename),
+    );
+    final streamed = await _client.send(request);
+    final res = await http.Response.fromStream(streamed);
+    return _decode(res);
+  }
+
   dynamic _decode(http.Response res) {
     final bodyText = res.body.isEmpty ? '{}' : res.body;
     dynamic decoded;
